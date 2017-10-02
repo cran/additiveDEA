@@ -48,7 +48,9 @@ If N is not divisible by blockSize, dea.fast will split the data into a number o
 Returns a numeric vector containing the (in)efficiency scores of the DMUs.
 }
 \note{
-The presence of DMUs with solution status other than 0 (see dea.gem and dea.sbm) will result in dea.fast NOT working. Ensure that there is a solution for all DMUs or, when the solution status is 5, that the data are scaled appropriately. 
+The presence of DMUs with solution status other than 0 (see dea.gem and dea.sbm) will result in dea.fast NOT working. Ensure that there is a solution for all DMUs or, when the solution status is 5, that the data are scaled appropriately.
+
+Extreme care is needed when add.model = 'RAM' when ranges are too large relative to the slacks. In such a case, the slack-range ratios can be so small that an inefficient DMU may seem to have near-zero inefficiency (see Cooper et al., 1999). This makes it extremely hard for the algorithm to distinguish between efficient and inefficient DMUs when the former must be separated from the latter within each block (as described earlier). Avoiding using RAM with \code{\link{dea.fast}} for the time being is strongly recommended.
 }
 \author{
 Andreas Diomedes Soteriades, \email{andreassot10@yahoo.com}
@@ -92,31 +94,81 @@ function (base, noutput, fixed = NULL, rts = 2, bound = NULL,
         aux <- blocks[i]:(blocks[i + 1] - 1)
         base1 <- base[aux, ]
         bound1 <- bound[aux, ]
-        ifelse(add.model != "SBM", eff <- round(dea.gem(base = base1, 
-            noutput, fixed, rts, bound = bound1, add.model)$eff, 
-            7), eff <- round(dea.sbm(base = base1, noutput, fixed, 
-            rts, bound = bound1)$eff, 7))
-        ifelse(add.model != "SBM", baseEfficient[[i]] <- base1[eff == 
-            0, ], baseEfficient[[i]] <- base1[eff == 1, ])
+        if (add.model != "SBM") {
+            eff <- round(dea.gem(base = base1, noutput, fixed, 
+                rts, bound = bound1, add.model)$eff, 7)
+            index <- which(is.na(eff))
+            if (length(index) > 0) {
+                eff[index] <- round(dea.gem(base = base1, noutput, 
+                  fixed, rts, bound = bound1, add.model, whichDMUs = index)$eff, 
+                  7)
+            }
+            baseEfficient[[i]] <- base1[which(eff == 0), ]
+        }
+        else {
+            eff <- round(dea.sbm(base = base1, noutput, fixed, 
+                rts, bound = bound1)$eff, 7)
+            index <- which(is.na(eff))
+            if (length(index) > 0) {
+                eff[index] <- round(dea.sbm(base = base1, noutput, 
+                  fixed, rts, bound = bound1, whichDMUs = index)$eff, 
+                  7)
+            }
+            baseEfficient[[i]] <- base1[which(eff == 1), ]
+        }
     }
     if (n\%\%blockSize != 0) {
         aux <- (n - (n\%\%blockSize) + 1):n
         base1 <- base[aux, ]
         bound1 <- bound[aux, ]
-        ifelse(add.model != "SBM", eff <- round(dea.gem(base = base1, 
-            noutput, fixed, rts, bound = bound1, add.model)$eff, 
-            7), eff <- round(dea.sbm(base = base1, noutput, fixed, 
-            rts, bound = bound1)$eff, 7))
-        ifelse(add.model != "SBM", baseEfficient[[i + 1]] <- base1[eff == 
-            0, ], baseEfficient[[i + 1]] <- base1[eff == 1, ])
+        if (add.model != "SBM") {
+            eff <- round(dea.gem(base = base1, noutput, fixed, 
+                rts, bound = bound1, add.model)$eff, 7)
+            index <- which(is.na(eff))
+            if (length(index) > 0) {
+                eff[index] <- round(dea.gem(base = base1, noutput, 
+                  fixed, rts, bound = bound1, add.model, whichDMUs = index)$eff, 
+                  7)
+            }
+            baseEfficient[[i + 1]] <- base1[which(eff == 0), 
+                ]
+        }
+        else {
+            eff <- round(dea.sbm(base = base1, noutput, fixed, 
+                rts, bound = bound1)$eff, 7)
+            index <- which(is.na(eff))
+            if (length(index) > 0) {
+                eff[index] <- round(dea.sbm(base = base1, noutput, 
+                  fixed, rts, bound = bound1, whichDMUs = index)$eff, 
+                  7)
+            }
+            baseEfficient[[i + 1]] <- base1[which(eff == 1), 
+                ]
+        }
     }
     baseEfficient <- do.call("rbind", baseEfficient)
-    ifelse(add.model != "SBM", eff <- round(dea.gem(base = baseEfficient, 
-        noutput, fixed, rts, bound = NULL, add.model)$eff, 7), 
-        eff <- round(dea.sbm(base = baseEfficient, noutput, fixed, 
-            rts, bound = NULL)$eff, 7))
-    ifelse(add.model != "SBM", baseEfficient <- baseEfficient[eff == 
-        0, ], baseEfficient <- baseEfficient[eff == 1, ])
+    if (add.model != "SBM") {
+        eff <- round(dea.gem(base = base1, noutput, fixed, rts, 
+            bound = bound1, add.model)$eff, 7)
+        index <- which(is.na(eff))
+        if (length(index) > 0) {
+            eff[index] <- round(dea.gem(base = base1, noutput, 
+                fixed, rts, bound = bound1, add.model, whichDMUs = index)$eff, 
+                7)
+        }
+        baseEfficient <- base1[which(eff == 0), ]
+    }
+    else {
+        eff <- round(dea.sbm(base = base1, noutput, fixed, rts, 
+            bound = bound1)$eff, 7)
+        index <- which(is.na(eff))
+        if (length(index) > 0) {
+            eff[index] <- round(dea.sbm(base = base1, noutput, 
+                fixed, rts, bound = bound1, whichDMUs = index)$eff, 
+                7)
+        }
+        baseEfficient <- base1[which(eff == 1), ]
+    }
     eff <- list()
     for (i in 1:mod) {
         aux <- blocks[i]:(blocks[i + 1] - 1)
@@ -129,11 +181,24 @@ function (base, noutput, fixed = NULL, rts = 2, bound = NULL,
             names(df) <- names(bound1)
             bound1 <- rbind(bound1, df)
         }
-        ifelse(add.model != "SBM", eff[[i]] <- round(dea.gem(base = base1, 
-            noutput, fixed, rts, bound = bound1, add.model, whichDMUs = 1:blockSize)$eff, 
-            7), eff[[i]] <- round(dea.sbm(base = base1, noutput, 
-            fixed, rts, bound = bound1, whichDMUs = 1:blockSize)$eff, 
-            7))
+        if (add.model != "SBM") {
+            eff[[i]] <- dea.gem(base = base1, noutput, fixed, 
+                rts, bound = bound1, add.model, whichDMUs = 1:blockSize)$eff
+            index <- which(is.na(eff[[i]]))
+            if (length(index) > 0) {
+                eff[[i]][index] <- dea.gem(base = base1, noutput, 
+                  fixed, rts, bound = bound1, add.model, whichDMUs = index)$eff
+            }
+        }
+        else {
+            eff[[i]] <- dea.sbm(base = base1, noutput, fixed, 
+                rts, bound = bound1, whichDMUs = 1:blockSize)$eff
+            index <- which(is.na(eff[[i]]))
+            if (length(index) > 0) {
+                eff[[i]][index] <- dea.sbm(base = base1, noutput, 
+                  fixed, rts, bound = bound1, whichDMUs = index)$eff
+            }
+        }
     }
     if (n\%\%blockSize != 0) {
         aux <- (n - (n\%\%blockSize) + 1):n
@@ -147,13 +212,31 @@ function (base, noutput, fixed = NULL, rts = 2, bound = NULL,
             names(df) <- names(bound1)
             bound1 <- rbind(bound1, df)
         }
-        ifelse(add.model != "SBM", eff[[i + 1]] <- round(dea.gem(base = base1, 
-            noutput, fixed, rts, bound = bound1, add.model, whichDMUs = 1:newBlockSize)$eff, 
-            7), eff[[i + 1]] <- round(dea.sbm(base = base1, noutput, 
-            fixed, rts, bound = bound1, whichDMUs = 1:newBlockSize)$eff, 
-            7))
+        if (add.model != "SBM") {
+            eff[[i + 1]] <- dea.gem(base = base1, noutput, fixed, 
+                rts, bound = bound1, add.model, whichDMUs = 1:newBlockSize)$eff
+            index <- which(is.na(eff[[i + 1]]))
+            if (length(index) > 0) {
+                eff[[i + 1]][index] <- dea.gem(base = base1, 
+                  noutput, fixed, rts, bound = bound1, add.model, 
+                  whichDMUs = index)$eff
+            }
+        }
+        else {
+            eff[[i + 1]] <- dea.sbm(base = base1, noutput, fixed, 
+                rts, bound = bound1, whichDMUs = 1:newBlockSize)$eff
+            index <- which(is.na(eff[[i + 1]]))
+            if (length(index) > 0) {
+                eff[[i + 1]][index] <- dea.sbm(base = base1, 
+                  noutput, fixed, rts, bound = bound1, whichDMUs = index)$eff
+            }
+        }
     }
     eff <- unlist(eff)
     return(eff)
   }
 }
+% Add one or more standard keywords, see file 'KEYWORDS' in the
+% R documentation directory.
+\keyword{ ~kwd1 }% use one of  RShowDoc("KEYWORDS")
+\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line

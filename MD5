@@ -1,10 +1,8 @@
-3d1bdca8b4e1850c6eac1721dd290db7 *DESCRIPTION
+452a1b6638c5789963e7ec640fa9c47a *DESCRIPTION
 193b09b1d2bd7b137bb04c1353861911 *NAMESPACE
-dc63dbc50dedc554de99b28855812ff9 *R/dea.fast.R
-c18de00cea1f1dbb4bacbaaa135fb96e *R/dea.gem.R
-d0cd43dc9bbc3dc3051f220d9a9dcff3 *R/dea.sbm.R
-be720f8c7fadf71c7fb71da8adbd76e2 *build/partial.rdb
-32958b52d621bdc4568e124da784f502 *man/additiveDEA-package.Rd
-1a7a273d63c39e0804baec4d74a78603 *man/dea.fast.Rd
-7dd702c58b1c888039e4af07ee0ea4fe *man/dea.gem.Rd
-0e5ecd98cb0a443868f22de0ef1dcc34 *man/dea.sbm.Rd
+8fd3aa024b34b11c8b4ac1023475e9e3 *R/dea.fast.R
+0fcbae6e1e441eee8ec56b6ed660b021 *R/dea.gem.R
+301b0c6d5491043e5c9cd070ff9afccd *R/dea.sbm.R
+6ee4628d2509784074170d5ada6b8c04 *man/dea.fast.Rd
+48b3a110210314074ea82071d60ee80b *man/dea.gem.Rd
+4aa2229f1d1a83bec88b07367591748e *man/dea.sbm.Rd

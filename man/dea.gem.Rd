@@ -156,13 +156,13 @@ function (base, noutput, fixed = NULL, rts = 2, bound = NULL,
     add.model = c("additive", "RAM", "BAM", "MIP", "LovPast"), 
     whichDMUs = NULL, print.status = FALSE) 
 {
-    require(lpSolveAPI)
     s <- noutput
     m <- ncol(base) - s
     n <- nrow(base)
     ifelse(!is.null(whichDMUs), nn <- length(whichDMUs), nn <- n)
-    if (is.null(whichDMUs)) 
+    if (is.null(whichDMUs)) {
         whichDMUs <- 1:n
+    }
     re <- data.frame(matrix(0, nrow = nn, ncol = 1 + n + s + 
         m))
     names(re) <- c("eff", paste("lambda", 1:n, sep = ""), paste("slack.y", 
@@ -177,8 +177,10 @@ function (base, noutput, fixed = NULL, rts = 2, bound = NULL,
         type[fixed[fixed > s]] <- "<="
     }
     A <- cbind(t(base), slacks)
-    for (i in 1:(s + m)) add.constraint(lpmodel, xt = A[i, ], 
-        type = type[i], rhs = 0)
+    for (i in 1:(s + m)) {
+        add.constraint(lpmodel, xt = A[i, ], type = type[i], 
+            rhs = 0)
+    }
     if (add.model == "BAM") {
         Uo <- t(apply(data.frame(base[, 1:s]), 2, max) - t(base[, 
             1:s]))
@@ -187,13 +189,15 @@ function (base, noutput, fixed = NULL, rts = 2, bound = NULL,
         if (!is.null(bound) & rts == 1) {
             index1 <- which(colSums(bound) == 0)
             bound[, index1] <- data.frame(Uo, Li)[, index1]
-            if (!is.null(fixed)) 
+            if (!is.null(fixed)) {
                 bound[fixed] <- 0
+            }
         }
         if (is.null(bound) & rts == 1) {
             bound <- data.frame(Uo, Li)
-            if (!is.null(fixed)) 
+            if (!is.null(fixed)) {
                 bound[fixed] <- 0
+            }
         }
     }
     if (add.model == "RAM") {
@@ -205,14 +209,16 @@ function (base, noutput, fixed = NULL, rts = 2, bound = NULL,
             index1 <- which(colSums(bound) == 0)
             bound[, index1] <- t(as.data.frame(matrix(c(Ro, Ri), 
                 nrow = s + m, ncol = nrow(base))))[, index1]
-            if (!is.null(fixed)) 
+            if (!is.null(fixed)) {
                 bound[fixed] <- 0
+            }
         }
         if (is.null(bound) & rts == 1) {
             bound <- t(as.data.frame(matrix(c(Ro, Ri), nrow = s + 
                 m, ncol = nrow(base))))
-            if (!is.null(fixed)) 
+            if (!is.null(fixed)) {
                 bound[fixed] <- 0
+            }
         }
     }
     if (!is.null(bound)) {
@@ -225,13 +231,16 @@ function (base, noutput, fixed = NULL, rts = 2, bound = NULL,
             A.bound[k, n + index[k]] <- 1
         }
         A <- rbind(A, A.bound)
-        for (i in 1:k) add.constraint(lpmodel, xt = A[s + m + 
-            i, ], type = "<=", rhs = 0)
+        for (i in 1:k) {
+            add.constraint(lpmodel, xt = A[s + m + i, ], type = "<=", 
+                rhs = 0)
+        }
     }
     syx <- rep(-1, s + m)
     syx[fixed] <- 0
-    if (add.model == "additive") 
+    if (add.model == "additive") {
         set.objfn(lpmodel, c(rep(0, n), syx))
+    }
     if (add.model == "RAM") {
         Ro[Ro == 0] <- Inf
         Ri[Ri == 0] <- Inf
@@ -244,17 +253,19 @@ function (base, noutput, fixed = NULL, rts = 2, bound = NULL,
         set.objfn(lpmodel, c(rep(0, n), syx/st.dev))
     }
     k <- 0
-    if (print.status == TRUE) 
+    if (print.status == TRUE) {
         ifelse(!is.null(whichDMUs), solution.status <- rep(0, 
             nn), solution.status <- rep(0, n))
+    }
     if (rts == 2 & is.null(bound)) {
         add.constraint(lpmodel, xt = c(rep(1, n), rep(0, s + 
             m)), type = "=", rhs = 0)
         for (i in whichDMUs) {
             k <- k + 1
-            if (add.model == "MIP") 
+            if (add.model == "MIP") {
                 set.objfn(lpmodel, c(rep(0, n), as.numeric(syx/base[i, 
                   ])))
+            }
             if (add.model == "BAM") {
                 Uo[i, ][Uo[i, ] == 0] <- Inf
                 Li[i, ][Li[i, ] == 0] <- Inf
@@ -264,12 +275,14 @@ function (base, noutput, fixed = NULL, rts = 2, bound = NULL,
             }
             set.rhs(lpmodel, b = as.numeric(c(base[i, ], 1)))
             x <- solve(lpmodel)
-            if (print.status == TRUE) 
+            if (print.status == TRUE) {
                 solution.status[k] <- x
+            }
             re[k, ] <- c(-get.objective(lpmodel), tail(get.primal.solution(lpmodel), 
                 s + m + n))
-            if (x != 0) 
+            if (x != 0) {
                 re[k, ] <- rep(NA, ncol(re))
+            }
         }
     }
     if (rts == 2 & !is.null(bound)) {
@@ -277,9 +290,10 @@ function (base, noutput, fixed = NULL, rts = 2, bound = NULL,
             m)), type = "=", rhs = 0)
         for (i in whichDMUs) {
             k <- k + 1
-            if (add.model == "MIP") 
+            if (add.model == "MIP") {
                 set.objfn(lpmodel, c(rep(0, n), as.numeric(syx/base[i, 
                   ])))
+            }
             if (add.model == "BAM") {
                 Uo[i, ][Uo[i, ] == 0] <- Inf
                 Li[i, ][Li[i, ] == 0] <- Inf
@@ -287,9 +301,10 @@ function (base, noutput, fixed = NULL, rts = 2, bound = NULL,
                 set.objfn(lpmodel, c(rep(0, n), as.numeric(syx * 
                   Ranges)))
             }
-            if (add.model \%in\% c("RAM", "BAM")) 
+            if (add.model \%in\% c("RAM", "BAM")) {
                 set.rhs(lpmodel, b = as.numeric(c(base[i, ], 
                   bound[i, index], 1)))
+            }
             if (sum(add.model == c("RAM", "BAM")) == 0) {
                 bound[bound == 0] <- 10^10
                 set.rhs(lpmodel, b = as.numeric(c(base[i, ], 
@@ -297,36 +312,42 @@ function (base, noutput, fixed = NULL, rts = 2, bound = NULL,
             }
             solve(lpmodel)
             x <- solve(lpmodel)
-            if (print.status == TRUE) 
+            if (print.status == TRUE) {
                 solution.status[k] <- x
+            }
             re[k, ] <- c(-get.objective(lpmodel), tail(get.primal.solution(lpmodel), 
                 s + m + n))
-            if (x != 0) 
+            if (x != 0) {
                 re[k, ] <- rep(NA, ncol(re))
+            }
         }
     }
     if (rts == 1 & is.null(bound)) {
         for (i in whichDMUs) {
             k <- k + 1
-            if (add.model == "MIP") 
+            if (add.model == "MIP") {
                 set.objfn(lpmodel, c(rep(0, n), as.numeric(syx/base[i, 
                   ])))
+            }
             set.rhs(lpmodel, b = as.numeric(base[i, ]))
             x <- solve(lpmodel)
-            if (print.status == TRUE) 
+            if (print.status == TRUE) {
                 solution.status[k] <- x
+            }
             re[k, ] <- c(-get.objective(lpmodel), tail(get.primal.solution(lpmodel), 
                 s + m + n))
-            if (x != 0) 
+            if (x != 0) {
                 re[k, ] <- rep(NA, ncol(re))
+            }
         }
     }
     if (rts == 1 & !is.null(bound)) {
         for (i in whichDMUs) {
             k <- k + 1
-            if (add.model == "MIP") 
+            if (add.model == "MIP") {
                 set.objfn(lpmodel, c(rep(0, n), as.numeric(syx/base[i, 
                   ])))
+            }
             if (add.model == "BAM") {
                 Uo[i, ][Uo[i, ] == 0] <- Inf
                 Li[i, ][Li[i, ] == 0] <- Inf
@@ -334,24 +355,27 @@ function (base, noutput, fixed = NULL, rts = 2, bound = NULL,
                 set.objfn(lpmodel, c(rep(0, n), as.numeric(syx * 
                   Ranges)))
             }
-            if (add.model \%in\% c("RAM", "BAM")) 
+            if (add.model \%in\% c("RAM", "BAM")) {
                 set.rhs(lpmodel, b = as.numeric(c(base[i, ], 
                   bound[i, index])))
+            }
             if (sum(add.model == c("RAM", "BAM")) == 0) {
                 bound[bound == 0] <- 10^10
                 set.rhs(lpmodel, b = as.numeric(c(base[i, ], 
                   bound[i, index])))
             }
             x <- solve(lpmodel)
-            if (print.status == TRUE) 
+            if (print.status == TRUE) {
                 solution.status[k] <- x
+            }
             ifelse(x != 0, re[k, ] <- rep(NA, ncol(re)), re[k, 
                 ] <- c(-get.objective(lpmodel), tail(get.primal.solution(lpmodel), 
                 s + m + n)))
         }
     }
-    if (!is.null(fixed)) 
+    if (!is.null(fixed)) {
         re <- re[, -(1 + n + fixed)]
+    }
     if (print.status == TRUE) {
         reList <- list()
         reList[[1]] <- re
@@ -362,3 +386,7 @@ function (base, noutput, fixed = NULL, rts = 2, bound = NULL,
     return(re)
   }
 }
+% Add one or more standard keywords, see file 'KEYWORDS' in the
+% R documentation directory.
+\keyword{ ~kwd1 }% use one of  RShowDoc("KEYWORDS")
+\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line
